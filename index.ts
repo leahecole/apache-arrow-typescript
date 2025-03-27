@@ -1,20 +1,30 @@
 import {
-  Table,
-  FloatVector,
-  DateVector
+  RecordBatchReader,
+  RecordBatch,
+  RecordBatchStreamReader,
+  DataType,
 } from 'apache-arrow';
+import {Transform, TransformCallback} from 'stream';
+export class ArrowRecordReaderTransform extends Transform {
+  // private session: ReadSession;
 
-const LENGTH = 2000;
+  constructor(/*session: ReadSession*/) {
+    super({
+      objectMode: true,
+    });
+    // this.session = session;
+  }
 
-const rainAmounts = Float32Array.from(
-  { length: LENGTH },
-  () => Number((Math.random() * 20).toFixed(1)));
-
-const rainDates = Array.from(
-  { length: LENGTH },
-  (_, i) => new Date(Date.now() - 1000 * 60 * 60 * 24 * i));
-
-const rainfall = Table.new(
-  [FloatVector.from(rainAmounts), DateVector.from(rainDates)],
-  ['precipitation', 'date']
-);
+  _transform(
+    serializedRecordBatch: Uint8Array,
+    _: BufferEncoding,
+    callback: TransformCallback,
+  ): void {
+    const buf = Buffer.concat([
+      // this.session.arrowSchema?.serializedSchema as Uint8Array,
+      serializedRecordBatch,
+    ]);
+    const reader = RecordBatchReader.from(buf);
+    callback(null, reader);
+  }
+}
